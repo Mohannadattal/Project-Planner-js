@@ -11,9 +11,31 @@ class DOMHelper {
   }
 }
 
-class Tooltip {}
+class Tooltip {
+  constructor(closeNotifierFunction) {
+    this.closeNotifier = closeNotifierFunction;
+  }
+  closeToolTip = () => {
+    this.detach();
+    this.closeNotifier();
+  };
+
+  detach() {
+    this.element.remove();
+    //this.element.parentElement.removeChild(this.element)
+  }
+  attach() {
+    const tooltipElement = document.createElement('div');
+    tooltipElement.className = 'card';
+    tooltipElement.textContent = 'DUMMY!';
+    tooltipElement.addEventListener('click', this.closeToolTip);
+    this.element = tooltipElement;
+    document.body.append(tooltipElement);
+  }
+}
 
 class ProjectItem {
+  hasActiveToolTip = false;
   constructor(id, updateProjectListsFunction, type) {
     this.id = id;
     this.updateProjectListsHandler = updateProjectListsFunction;
@@ -21,7 +43,22 @@ class ProjectItem {
     this.connectMoreInfoButton();
   }
 
-  connectMoreInfoButton() {}
+  showMoreInfoHandler() {
+    if (this.hasActiveToolTip) {
+      return;
+    }
+    const tooltip = new Tooltip(() => {
+      this.hasActiveToolTip = false;
+    });
+    tooltip.attach();
+    this.hasActiveToolTip = true;
+  }
+
+  connectMoreInfoButton() {
+    const prjItemElement = document.getElementById(this.id);
+    const moreInfoBtn = prjItemElement.querySelector('button:first-of-type');
+    moreInfoBtn.addEventListener('click', this.showMoreInfoHandler);
+  }
 
   connectSwitchButton(type) {
     const prjItemElement = document.getElementById(this.id);
@@ -61,7 +98,7 @@ class ProjectList {
     console.log(project);
     this.projects.push(project);
     DOMHelper.moveElement(project.id, `#${this.type}-projects ul`);
-    project.update(this.switchProject.bind(this),this.type);
+    project.update(this.switchProject.bind(this), this.type);
   }
 
   switchProject(projectId) {
